@@ -18,12 +18,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/wangdizun/dingdongji"
+    "url": "https://github.com/pddrwang/dingdongji"
   },
   "bugs": {
-    "url": "https://github.com/wangdizun/dingdongji/issues"
+    "url": "https://github.com/pddrwang/dingdongji/issues"
   },
-  "qna": "https://github.com/wangdizun/dingdongji/issues",
+  "qna": "https://github.com/pddrwang/dingdongji/issues",
   "engines": {
     "vscode": "^1.125.0"
   },

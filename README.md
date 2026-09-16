@@ -260,4 +260,4 @@ Harness 当前不支持图片附件输入；过长的会话交接会提示拒绝
 
 反馈问题时，请描述操作步骤、预期结果和实际表现；提交日志或截图前移除密钥、个人身份信息及未公开研究内容。
 
-[反馈问题](https://github.com/wangdizun/dingdongji/issues) | [更新日志](CHANGELOG.md) | [MIT 许可](LICENSE) | [第三方说明](THIRD_PARTY_NOTICES.md)
+[反馈问题](https://github.com/pddrwang/dingdongji/issues) | [更新日志](CHANGELOG.md) | [MIT 许可](LICENSE) | [第三方说明](THIRD_PARTY_NOTICES.md)
