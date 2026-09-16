@@ -1,6 +1,6 @@
 # V2.4 发布门禁
 
-当前状态：源码、详情页与打包已完成上架前准备；本地 VSIX 已生成并在隔离环境安装成功。**尚未发布、未替换已装扩展。**
+当前状态：**已发布** `DingdongChilk.dingdongji v2.4.0`（2026-09-16）。用户明确批准后执行 `vsce publish`，Marketplace API 与 gallery CDN 均已确认资源在线。
 
 ## 本轮已执行的检查
 
@@ -24,10 +24,11 @@ CODE="/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code"
 
 结果：VSIX 42 个条目、约 707 KB；隔离安装成功，列表显示 `dingdongchilk.dingdongji@2.4.0`；包内无 `docs/`、`Publishing.md`、`*.ts`、`tsconfig`、`.map`、`__pycache__`、`node_modules`。这验证的是“可安装/清单正确”，不是完整运行时 UI 验证。
 
-## Marketplace 状态（2026-09-16 核对）
+## Marketplace 状态
 
-- `DingdongChilk.dingdongji` 在 Marketplace **未发布**，因此 2.4.0 版本号可用，无覆盖冲突。
-- 发布前仍需再次核对（以发布当时为准）。
+- 发布前（2026-09-16）：`DingdongChilk.dingdongji` 未发布，2.4.0 可用。
+- 发布后（2026-09-16）：`vsce publish --no-dependencies` 返回 `DONE Published DingdongChilk.dingdongji v2.4.0`；Marketplace `extensionquery` API 返回该扩展，gallery CDN 的 README Details 与 VSIXPackage 资源均 HTTP 200（VSIX ≈ 723,982 字节）。
+- 公开 item 页面 `https://marketplace.visualstudio.com/items?itemName=DingdongChilk.dingdongji` 在发布后短时间内仍返回 404（页面传播/审核可能滞后），以 API 与 CDN 为准；稍后复查页面。
 
 ## 公开仓库（已解决）
 
@@ -36,14 +37,13 @@ CODE="/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code"
 - 已核验公网可达（HTTP 200）：仓库页、`README.md`、`CHANGELOG.md`、`LICENSE`、`media/details/workbench.png`、`media/details/citation-verification.png`。Marketplace 用该仓库解析 README 相对图片与链接。
 - 认证经 `gh auth login` 设备码完成，令牌仅存本机 `gh` 配置；未在对话或仓库中写入任何密钥。
 
-## 发布动作（需明确批准后执行）
+## 发布动作（已执行）
 
-1. 解决上面的公开仓库阻塞项，并在真实仓库中确认 README 图片/链接可访问。
-2. 在 VS Code 宿主中人工检查详情页、主题、缩放与卡片交互。
-3. 用两个独立项目检查会话切换/隔离；用无敏感数据的真实项目跑一轮研究闭环。
-4. 获得明确批准后：`npx vsce publish --no-dependencies`（发布）或先分发本地 VSIX。
+1. 公开仓库已解决并核验 README 图片/链接可访问。
+2. 用户明确批准后执行：`VSCE_PAT=<本机提供> npx vsce publish --no-dependencies` → 发布成功。
+3. 令牌未写入任何文件、未打印；发布后仍建议在 Azure DevOps 撤销并按需重建。
 
-本轮**没有发布**，也没有删除远端版本。
+**安全提醒**：本次发布用的 PAT 由用户在对话中提供，视为已泄露，应立即在 Azure DevOps 撤销并重建；新建令牌只配置在本机（`vsce login` 或仅本进程环境变量），不要粘贴到对话。
 
 ## 维护依据
 
