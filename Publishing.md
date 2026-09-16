@@ -29,10 +29,12 @@ CODE="/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code"
 - `DingdongChilk.dingdongji` 在 Marketplace **未发布**，因此 2.4.0 版本号可用，无覆盖冲突。
 - 发布前仍需再次核对（以发布当时为准）。
 
-## 上架前阻塞项（必须先解决）
+## 公开仓库（已解决）
 
-- `package.json` 的 repository / bugs / qna 指向 `https://github.com/wangdizun/dingdongji`，公网 404。VS Code Marketplace 用公开仓库解析 README 的相对图片与相对链接（如 `media/details/workbench.png`、`CHANGELOG.md`、`LICENSE`）。请先创建并公开该仓库、推送源码与 `media/`，或把详情页图片改为可公网访问的绝对地址，否则详情页图片和链接不可用。
-- 仓库需要由你在 GitHub 上创建；本地未擅自 `git init` 或推送。推送前建议确认仓库地址与你的 GitHub 账号一致。
+- 仓库：`https://github.com/pddrwang/dingdongji`（**public**，默认分支 `main`）。
+- `package.json` 的 repository / bugs / qna 与 README 反馈链接已指向该仓库。
+- 已核验公网可达（HTTP 200）：仓库页、`README.md`、`CHANGELOG.md`、`LICENSE`、`media/details/workbench.png`、`media/details/citation-verification.png`。Marketplace 用该仓库解析 README 相对图片与链接。
+- 认证经 `gh auth login` 设备码完成，令牌仅存本机 `gh` 配置；未在对话或仓库中写入任何密钥。
 
 ## 发布动作（需明确批准后执行）
 
