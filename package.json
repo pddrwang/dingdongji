@@ -1,0 +1,159 @@
+{
+  "name": "dingdongji",
+  "displayName": "叮咚鸡 V2.4 — 生物医学整合研究平台",
+  "description": "从科学 Idea 到可追溯结论：整合项目工作流、Codex 与 DeepSeek Harness 会话、研究证据及投稿准备。",
+  "version": "2.4.0",
+  "publisher": "DingdongChilk",
+  "license": "MIT",
+  "keywords": [
+    "biomedical",
+    "research",
+    "pipeline",
+    "codex",
+    "deepseek",
+    "literature-search",
+    "meta-analysis",
+    "knowledge-base",
+    "systematic-review"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wangdizun/dingdongji"
+  },
+  "bugs": {
+    "url": "https://github.com/wangdizun/dingdongji/issues"
+  },
+  "qna": "https://github.com/wangdizun/dingdongji/issues",
+  "engines": {
+    "vscode": "^1.125.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#141a22",
+    "theme": "dark"
+  },
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:ddj.openPanel"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "ddj.openPanel",
+        "title": "叮咚鸡：打开仪表盘"
+      },
+      {
+        "command": "ddj.previewAskCard",
+        "title": "叮咚鸡：预览交互卡片（询问）"
+      },
+      {
+        "command": "ddj.previewApprovalCard",
+        "title": "叮咚鸡：预览交互卡片（审批）"
+      },
+      {
+        "command": "ddj.scanWorkspace",
+        "title": "叮咚鸡：扫描工作区"
+      },
+      {
+        "command": "ddj.advanceStep",
+        "title": "叮咚鸡：进入下一步"
+      },
+      {
+        "command": "ddj.rollbackStep",
+        "title": "叮咚鸡：回退上一步"
+      },
+      {
+        "command": "ddj.resetPipeline",
+        "title": "叮咚鸡：重置管线"
+      },
+      {
+        "command": "ddj.toggleEnforcement",
+        "title": "叮咚鸡：切换约束模式（软/硬）"
+      },
+      {
+        "command": "ddj.openPlot",
+        "title": "叮咚鸡：打开科研绘图模块"
+      },
+      {
+        "command": "ddj.plotCheck",
+        "title": "叮咚鸡：体检绘图栈"
+      },
+      {
+        "command": "ddj.plotSamples",
+        "title": "叮咚鸡：渲染并预览绘图样例"
+      },
+      {
+        "command": "ddj.openCodex",
+        "title": "叮咚鸡：打开 Codex"
+      },
+      {
+        "command": "ddj.openCodexContext",
+        "title": "叮咚鸡：将项目上下文交给 Codex"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "ddj",
+          "title": "叮咚鸡",
+          "icon": "media/brand-chick.svg"
+        }
+      ]
+    },
+    "views": {
+      "ddj": [
+        {
+          "id": "ddj.views.main",
+          "name": "生物医学研究助手",
+          "type": "webview"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "ddj.scanWorkspace",
+          "when": "view == ddj.views.main",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "叮咚鸡 (DingDongJi)",
+      "properties": {
+        "dingdongji.deepseekExecutable": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "markdownDescription": "DeepSeek Harness CLI 的绝对路径。留空使用 ~/.local/bin/dsh；通过 --profile acp 独立接入当前项目，不连接浏览器全局会话。"
+        },
+        "dingdongji.codexExecutable": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "markdownDescription": "内置 Codex 可执行文件绝对路径。留空优先使用当前官方扩展附带的 Codex，再回退至 ~/.local/bin/codex。目录结构变化时可手动指定；修改后重新加载窗口。"
+        },
+        "dingdongji.defaultWorkspace": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "默认维保工作区路径：未打开文件夹时，叮咚鸡回退使用该目录（支持 `~` 开头）。留空则不做回退。"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "verify": "npm run compile && node --check src/webview/main.js && node --check src/webview/fusion.js && node --check src/webview/vector-icons.js",
+    "package:vsix": "npx vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "@types/vscode": "^1.125.0",
+    "@vscode/vsce": "^3.9.2",
+    "typescript": "^5.9.3"
+  }
+}

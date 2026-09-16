@@ -1,0 +1,341 @@
+/* Research command terminal: charcoal surfaces, signal yellow, cut corners. */
+body.fusion { grid-template-columns:var(--fusion-split,55%) minmax(0,1fr)!important; }
+.fusion-runtime-options,.fusion-document-actions {display:flex;flex-wrap:wrap;gap:5px;padding-top:8px}
+.fusion-runtime-options button,.fusion-document-actions button {background:#243238;color:#dce7e6;border:1px solid #52676c;padding:5px 8px;border-radius:3px;font-size:11px;cursor:pointer}
+.fusion-runtime-options button:disabled,.fusion-document-actions button:disabled{opacity:.45;cursor:default}
+#fusion-quota {display:block;flex-basis:100%;color:#b8ccc5;font-size:10px;overflow-wrap:anywhere}
+#fusion-preview {width:min(850px,85vw);max-height:80dvh;background:#182226;color:#e5e7e5;border:1px solid #718b89;border-radius:6px;padding:18px;overflow:auto}
+#fusion-preview::backdrop {background:#071013b0;backdrop-filter:blur(4px)}
+#fusion-preview header {display:flex;justify-content:space-between;gap:15px;border-bottom:1px solid #52676c;padding-bottom:12px}
+#fusion-preview button {background:#243238;color:#fff;border:1px solid #718b89;padding:5px 10px}
+.fusion-preview-content {line-height:1.8;overflow-wrap:anywhere;white-space:pre-wrap}
+.fusion-preview-content pre {overflow:auto}
+#fusion-divider { position:fixed; z-index:20; top:0; bottom:0; left:calc(58px + (100vw - 58px) * var(--fusion-ratio,.55) - 4px); width:8px; cursor:col-resize; touch-action:none; background:transparent; }
+#fusion-divider:hover,#fusion-divider:focus-visible,.fusion-resizing #fusion-divider { background:rgba(241,211,90,.35); outline:1px solid var(--ac); }
+.fusion-resizing { user-select:none; }
+.fusion-guide { color:var(--t2); font-size:11px; padding:8px 0; }.fusion-guide summary { cursor:pointer; }.fusion-guide p { line-height:1.7; margin:8px 0; }
+#fusion-check-result { color:var(--t2); font-size:11px; line-height:1.7; }
+#fusion-delete { color:#ffb4a8; }.fusion-toolbar button:disabled { opacity:.4; cursor:default; }
+.fusion .is-running .fusion-channel { border-left:3px solid var(--ac); }
+@media(prefers-reduced-motion:no-preference) { .fusion-toolbar button { transition:background .15s,border-color .15s; }.fusion-toolbar button:active { transform:translateY(1px); }.is-running #fusion-status { animation:fusion-breathe 1.8s ease-in-out infinite; } }
+@keyframes fusion-breathe { 50% { opacity:.5; } }
+@media(max-width:1000px) { #fusion-divider { display:none; } }
+.fusion #fusion-chat { font-family:var(--vscode-font-family,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif); }
+.fusion #fusion-chat .fusion-heading { margin-bottom:12px; padding-bottom:12px; }
+.fusion #fusion-chat .fusion-heading h1 { font-size:19px; letter-spacing:0; }
+.fusion .fusion-message { border:0; background:transparent; padding:14px 4px; }
+.fusion .fusion-message.user { background:#283135; border:1px solid #3b454a; border-radius:14px 14px 4px 14px; margin-left:28px; padding:14px 16px; }
+.fusion .fusion-message.assistant { background:transparent; border:0; }
+.fusion-message p { margin:6px 0; }.fusion-message pre { padding:14px; background:#0e1418; border:1px solid #3a4145; border-radius:8px; overflow:auto; white-space:pre; }
+.fusion-message code { font-family:var(--vscode-editor-font-family,monospace); font-size:12px; background:#252d32; border-radius:3px; padding:2px 4px; }.fusion-message pre code { background:none; padding:0; }
+.fusion-message h3,.fusion-message h4,.fusion-message h5 { margin:14px 0 8px; }.fusion-copy { padding:4px 8px; margin-top:8px; border:0; border-radius:5px; background:transparent; color:var(--t2); cursor:pointer; }.fusion-copy:hover { background:#303a40; color:var(--tx); }
+.fusion-message details { border:1px solid var(--bd); border-radius:8px; padding:9px 12px; }.fusion-message summary { cursor:pointer; font-size:12px; color:var(--t2); }
+.fusion #fusion-form { background:#1b2429; padding:12px; border:1px solid #536068; border-radius:14px; }.fusion #fusion-input { background:transparent; border:0; resize:vertical; }.fusion #fusion-form:focus-within { border-color:var(--ac); }
+.fusion-toolbar { display:flex; flex-wrap:wrap; gap:6px; margin:12px 0; }
+.fusion-toolbar button,#fusion-attachments button { border:1px solid var(--bd); background:#20282c; color:var(--tx); padding:6px 9px; cursor:pointer; font:11px inherit; }
+.fusion-toolbar button:hover,#fusion-attachments button:hover { border-color:var(--ac); color:var(--ac); }
+#fusion-mode { border-left:3px solid var(--ac); }
+.fusion-history-label { color:var(--t2); font-size:10px; letter-spacing:.08em; }
+#fusion-history,#fusion-search { width:100%; border:1px solid var(--bd); background:#11191e; color:var(--tx); padding:8px; margin:5px 0; font:inherit; }
+#fusion-workspace { color:var(--t2); font:10px monospace; overflow-wrap:anywhere; padding:6px 0; }
+#fusion-attachments { display:flex; flex-wrap:wrap; gap:5px; }
+.fusion #fusion-chat { background-image:linear-gradient(90deg,rgba(94,165,180,.035) 1px,transparent 1px),linear-gradient(rgba(94,165,180,.035) 1px,transparent 1px),linear-gradient(135deg,#253137,#131a1e 52%,#101416); background-size:32px 32px,32px 32px,100% 100%; }
+.fusion .fusion-heading { position:relative; border-bottom:1px solid #46545c; padding-bottom:16px; }
+.fusion .fusion-heading::after { content:''; position:absolute; width:48px; height:4px; bottom:-2px; right:0; background:var(--ac); }
+.fusion .fusion-channel { background:linear-gradient(90deg,rgba(241,211,90,.08),transparent); padding-inline:10px; }
+.fusion .fusion-message.assistant { border-left-color:#8cbac6; background:linear-gradient(100deg,#202b31,#1a2125); }
+.fusion .research-stage-nav button.active { background:linear-gradient(120deg,#343529,#252e31); }
+.fusion .research-next-state { border-radius:0; border-right:3px solid var(--ac); }
+body.fusion,body.fusion.ddj-light { --bg:#111416; --bg2:#1c2023; --bd:#3a4145; --tx:#e5e7e5; --t2:#a6afaf; --ac:#f1d35a; --cy:#c9cdbb; --pu:#c9cdbb; background:var(--bg); color:var(--tx); }
+body.fusion { display:grid; grid-template-columns:minmax(490px,1.1fr) minmax(370px,.9fr); height:100dvh; overflow:hidden; padding-left:58px; }
+.fusion #app { grid-column:1; grid-row:1; overflow:auto; border-right:1px solid var(--bd); }
+.fusion .app-shell { display:block; }.fusion .content { margin:0; padding:16px; width:100%; }
+.fusion .rail { position:fixed; left:0; top:0; width:58px; height:100dvh; background:#191d20; border-right:1px solid var(--bd); }
+.fusion .rail-brand-copy,.fusion .rail-lb,.fusion .rail-toggle { display:none; }
+.fusion .rail-btn { justify-content:center; padding:12px 4px; border-radius:0; }.fusion .rail-btn.active { background:#f1d35a; color:#111416; }
+.fusion .workspace-bar { position:static; }.fusion .research-next { padding:18px; background:var(--bg2); }.fusion .research-next h1 { font-size:20px; }
+.fusion .research-workspace,.fusion .workflow-agent,.fusion .idea-root,.fusion .conclusion-card { border-radius:0; box-shadow:none; }
+.fusion .research-stage-nav { grid-template-columns:repeat(2,minmax(0,1fr)); }.fusion .research-stage-body { padding:16px; }
+.fusion .workflow-agent { display:block; }.fusion .workflow-checklist { margin-top:14px; border-left:0; border-top:1px solid var(--bd); padding:12px 0 0 14px; }
+.fusion .codex-command,.fusion .codex-health-grid { display:none; }
+#fusion-chat { grid-column:2; grid-row:1; min-width:0; display:flex; flex-direction:column; height:100dvh; padding:26px 22px 16px; background:linear-gradient(135deg,#252b2d 0%,#171b1d 38%,#111416 100%); }
+.fusion-heading { border-left:4px solid var(--ac); padding-left:16px; margin-bottom:24px; }.fusion-heading>span { color:var(--ac); font:10px monospace; letter-spacing:.14em; }.fusion-heading h1 { font-size:28px; letter-spacing:.06em; margin:9px 0; }.fusion-heading p { color:var(--t2); font-size:12px; }
+.fusion-channel { display:flex; justify-content:space-between; gap:12px; border-block:1px solid var(--bd); padding:12px 0; font:11px monospace; }.fusion-channel span { color:var(--ac); }
+#fusion-messages { flex:1; min-height:0; overflow:auto; padding:16px 0; scrollbar-width:thin; }
+.fusion-empty { padding:36px 6px; }.fusion-empty>span { color:var(--ac); font:11px monospace; }.fusion-empty h2 { font-size:22px; margin:14px 0; }.fusion-empty p { color:var(--t2); line-height:1.8; }
+.fusion-message { padding:14px 12px; margin-bottom:14px; border-left:2px solid var(--bd); background:#1c2124; overflow-wrap:anywhere; }.fusion-message>b { font:10px monospace; color:var(--ac); }.fusion-message>div { white-space:pre-wrap; margin-top:8px; line-height:1.75; }.fusion-message.user { border-left-color:var(--ac); }.fusion-message.activity { font-size:11px; background:transparent; }.fusion-message.system { border-color:#e79565; }
+#fusion-form { border-top:1px solid var(--bd); padding-top:14px; }#fusion-form label { display:block; font-size:12px; margin-bottom:9px; }#fusion-input { width:100%; resize:vertical; min-height:88px; max-height:230px; background:#111416; border:1px solid #697273; border-radius:0; padding:12px; color:var(--tx); font:inherit; }#fusion-input::placeholder { color:var(--t2); }.fusion-actions { display:flex; gap:8px; align-items:center; margin-top:10px; }.fusion-actions small { flex:1; color:var(--t2); font-size:10px; }.fusion-actions button { padding:9px 14px; background:transparent; border:1px solid var(--bd); color:var(--tx); cursor:pointer; }#fusion-send { background:var(--ac); color:#151816; border-color:var(--ac); font-weight:700; clip-path:polygon(0 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%); }.fusion-actions button:disabled { opacity:.45; cursor:default; }#fusion-error { color:#ffc69b; white-space:pre-wrap; }#fusion-chat :is(button,textarea):focus-visible { outline:2px solid var(--ac); outline-offset:3px; }
+@media(max-width:1000px) { body.fusion { display:flex; flex-direction:column; overflow:auto; height:auto; }.fusion #app { overflow:visible; border-right:0; }#fusion-chat { order:-1; height:80dvh; min-height:500px; }.fusion .content { padding:12px; } }
+@media(prefers-reduced-motion:reduce) { .fusion * { animation:none!important; transition:none!important; } }
+/* Research telemetry: real pipeline counts; generation has no fabricated percent. */
+.fusion .fusion-telemetry {flex:none;border:1px solid #41494e;border-left:2px solid var(--ac);padding:10px 12px;margin:8px 0;background:linear-gradient(110deg,#f1d35a08,transparent 65%);font-size:11px;position:relative;overflow:hidden}
+.fusion-telemetry-title {display:flex;align-items:center;gap:7px;margin-bottom:7px;color:var(--tx)}
+.fusion-telemetry-title svg {width:17px;height:17px;color:var(--ac)}
+#fusion-counts {margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums}
+#fusion-progress {display:block;width:100%;height:5px;margin:7px 0;accent-color:var(--ac);border:0;background:#353b40}
+#fusion-progress::-webkit-progress-bar {background:#353b40}
+#fusion-progress::-webkit-progress-value {background:var(--ac);transition:width .25s ease}
+#fusion-runtime {color:var(--muted);overflow-wrap:anywhere;font-size:11px;line-height:1.6}
+.fusion-run-track {height:2px;position:absolute;bottom:0;left:0;right:0;overflow:hidden}
+.fusion-run-track i {display:none;width:30%;height:100%;background:#8ecfce}
+.is-running .fusion-run-track i {display:block;animation:fusion-travel 1.8s ease-in-out infinite}
+@keyframes fusion-travel {from{transform:translateX(-100%)}to{transform:translateX(435%)}}
+.fusion .fusion-management-header {display:flex;align-items:center;gap:8px;flex:none;font-size:11px;padding:5px 0}
+.fusion-management-header label {white-space:nowrap;color:var(--muted)}
+.fusion-management-header output {color:var(--ac);font-variant-numeric:tabular-nums}
+.fusion .fusion-management-header small {margin-left:auto;color:var(--muted);font-size:10px}
+.fusion-management-header button {background:transparent;border:1px solid var(--bd);color:var(--muted);font-size:10px;padding:3px 7px;white-space:nowrap}
+.fusion #fusion-management {height:var(--management-height,94px);flex:0 0 var(--management-height,94px);min-height:0;overflow:auto;overscroll-behavior:contain;padding:0 5px 8px 0;scrollbar-gutter:stable;box-sizing:border-box}
+.fusion #fusion-management #fusion-history,.fusion #fusion-management #fusion-search {width:100%;box-sizing:border-box}
+.fusion #fusion-messages {min-height:140px;flex:1 1 0;overscroll-behavior:contain;overflow:auto;padding:10px 0}
+.fusion #fusion-management-divider {height:12px;flex:0 0 12px;cursor:row-resize;touch-action:none;position:relative;outline-offset:-2px}
+#fusion-management-divider::after {content:'';position:absolute;left:0;right:0;top:5px;height:2px;background:var(--bd)}
+#fusion-management-divider:hover::after,#fusion-management-divider:focus-visible::after {background:var(--ac);box-shadow:0 0 7px #f1d35a55}
+.fusion #fusion-chat {box-sizing:border-box;min-height:560px;overflow:hidden;padding:12px 16px}
+.fusion #fusion-chat .fusion-heading {flex:none;padding-bottom:6px;margin-bottom:6px}
+.fusion #fusion-chat .fusion-heading h1 {margin:4px 0;font-size:18px}
+.fusion #fusion-chat .fusion-heading p {display:none}
+.fusion #fusion-form {flex:0 0 auto;margin:0;padding:9px;box-sizing:border-box}
+.fusion #fusion-input {box-sizing:border-box;height:70px;min-height:48px;max-height:110px;resize:none;padding:8px}
+.fusion .fusion-actions {flex-wrap:wrap;margin-top:5px;gap:6px}
+.fusion #fusion-error,.fusion #fusion-attachments {flex:none;max-height:55px;overflow:auto;overflow-wrap:anywhere}
+.fusion .fusion-channel {flex:none}
+@media (max-height:559px) {body.fusion{overflow:auto}.fusion #app{height:560px}}
+.fusion :is(button,input,select,textarea):focus-visible {outline:2px solid #8ecfce;outline-offset:2px}
+@media (max-height:760px) {.fusion .fusion-heading p{display:none}.fusion #fusion-chat{padding-top:12px}.fusion .fusion-heading h1{font-size:22px}.fusion #fusion-input{min-height:48px;height:64px}}
+@media (prefers-reduced-motion:reduce) {.is-running .fusion-run-track i{animation:none;width:100%;opacity:.5}#fusion-progress::-webkit-progress-value{transition:none}}
+.fusion-quick-session {display:flex;gap:8px;align-items:center}
+.fusion .fusion-quick-session #fusion-history {flex:1;min-width:0;width:auto;margin:0}
+.fusion-quick-session button {flex:none;border:1px solid var(--bd);background:#283135;color:var(--tx);padding:8px 12px;cursor:pointer}
+.fusion-more>summary {padding:10px 0;color:var(--t2);font-size:11px;cursor:pointer}
+.fusion-more .fusion-history-label {display:none}
+.fusion-boot {flex:none;position:relative;display:flex;gap:10px;align-items:center;overflow:hidden;min-height:44px;padding:6px 10px;margin:5px 0 8px;border:1px solid #35484c;background:linear-gradient(110deg,#223339,#161d21);box-sizing:border-box}
+.fusion-boot>div {display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;min-width:0}
+.fusion-boot b {font:11px monospace;color:#a1d7cc}
+.fusion-boot-summary {font-size:11px;color:var(--t2);overflow-wrap:anywhere}
+.fusion-boot-orbit {flex:none;width:18px;height:18px;border:1px solid #466660;border-top-color:#9be5d2;transform:rotate(45deg);box-shadow:0 0 10px #8ccfbb22}
+.fusion-boot.checking .fusion-boot-orbit {animation:fusion-orbit 2s linear infinite}
+.fusion-boot>i {position:absolute;bottom:0;left:0;height:2px;width:100%;background:#8bd2bd;opacity:.45}
+.fusion-boot.checking>i {width:25%;animation:fusion-travel 1.6s ease-in-out infinite;box-shadow:0 0 12px #94e0cf}
+.fusion-boot.warning {border-color:#9c7943}.fusion-boot.warning b {color:#e4be79}.fusion-boot.warning>i {background:#e4be79}
+@keyframes fusion-orbit {to{transform:rotate(405deg)}}
+@media(prefers-reduced-motion:no-preference){.fusion-boot{animation:fusion-boot-enter .55s cubic-bezier(.2,.7,.2,1) both;transition:border-color .35s,background .35s}@keyframes fusion-boot-enter{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}}
+/* Original flat terminal micrographics: geometry only, no downloaded game assets. */
+.fusion {--signal-dim:#677c80}
+.fusion #fusion-chat .fusion-heading {padding-right:92px;border-left-width:2px}
+.fusion-insignia {position:absolute;right:2px;top:0;width:76px;color:#d0c899;pointer-events:none;opacity:.65;text-align:center}
+.fusion-insignia svg {display:block;width:66px;height:34px;margin:auto}
+.fusion-insignia span {display:block;font:7px monospace;letter-spacing:.1em;white-space:nowrap}
+.fusion .fusion-heading::after {height:3px;width:60px;background:repeating-linear-gradient(120deg,var(--ac) 0 6px,transparent 6px 10px)}
+.fusion-signal-ticks {display:inline-flex;gap:3px;align-items:center;margin-right:9px;vertical-align:middle}
+.fusion-signal-ticks i {display:block;width:3px;height:9px;background:var(--signal-dim);transform:skewX(-15deg)}
+.fusion-signal-ticks i:nth-child(2n) {height:6px;opacity:.6}
+.fusion .is-running .fusion-signal-ticks i {background:var(--ac)}
+.fusion .fusion-channel {background:linear-gradient(90deg,#f1d35a08,transparent 65%);border-top:0;border-bottom:1px solid #3c484c}
+.fusion .fusion-boot {background:linear-gradient(120deg,#243237,#171f23);border-left:2px solid #8bd2bd}
+.fusion-boot::after {content:'';position:absolute;right:0;top:0;width:30px;height:7px;background:repeating-linear-gradient(125deg,#88b0a933 0 3px,transparent 3px 6px);pointer-events:none}
+.fusion .fusion-boot.warning {border-left-color:#e4be79}
+.fusion .fusion-telemetry {background:linear-gradient(90deg,#f1d35a06,transparent),radial-gradient(#8bbbc014 .7px,transparent .8px);background-size:auto,8px 8px}
+.fusion .fusion-management-header {border-bottom:1px solid #354044;margin-bottom:5px}
+.fusion .fusion-management-header>span::before {content:'▰';font-size:9px;color:var(--ac);margin-right:7px}
+.fusion #fusion-management-divider::after {height:3px;background:linear-gradient(90deg,#3a4145 calc(50% - 20px),#839496 calc(50% - 20px),#839496 calc(50% + 20px),#3a4145 calc(50% + 20px))}
+.fusion #fusion-management-divider:hover::after,.fusion #fusion-management-divider:focus-visible::after {background:var(--ac)}
+.fusion #fusion-form {position:relative;border-radius:3px 3px 12px 3px;background:#192226;box-shadow:none}
+.fusion #fusion-form::before {content:'';position:absolute;top:-1px;left:14px;width:36px;height:2px;background:var(--ac);pointer-events:none}
+.fusion #fusion-form::after {content:'';position:absolute;bottom:5px;right:5px;width:5px;height:5px;border-right:1px solid #b7c9c7;border-bottom:1px solid #b7c9c7;pointer-events:none}
+.fusion .fusion-message.assistant {background:transparent;border-left:1px solid #46595f;padding-left:12px}
+.fusion .fusion-message.user {border-radius:6px 6px 2px 6px;background:#242e32}
+.fusion .fusion-message.system {border-left:2px solid #c9a06c;background:#c9a06c08;padding-left:10px}
+.fusion .fusion-copy {font-size:11px;border-radius:2px}
+@media(prefers-reduced-motion:no-preference){.is-running .fusion-signal-ticks i {animation:fusion-breathe 1.5s ease-in-out infinite}.is-running .fusion-signal-ticks i:nth-child(2n){animation-delay:.25s}}
+@media(max-width:520px){.fusion-insignia{display:none}.fusion #fusion-chat .fusion-heading{padding-right:0}}
+@media(forced-colors:active){.fusion-insignia,.fusion-signal-ticks{display:none}.fusion .fusion-message.assistant,.fusion .fusion-message.system{border-color:CanvasText}}
+/* Left research dashboard uses the same quiet, flat terminal vocabulary. */
+.fusion #app {min-width:0;container-type:inline-size;background:radial-gradient(#8bbbc00b .6px,transparent .8px),var(--bg);background-size:12px 12px}
+.fusion #app .workspace-bar {border-bottom:1px solid #405054;background:#151d20;box-shadow:none}
+.fusion #app .research-workspace {border:1px solid #39464b;background:#141b1e}
+.fusion #app .research-next {position:relative;background:linear-gradient(110deg,#212c2f,#192124);border-bottom:1px solid #3b4a4e;padding:18px 20px}
+.fusion #app .research-next::after {content:'';position:absolute;right:12px;top:0;width:52px;height:3px;background:repeating-linear-gradient(120deg,#b9b78a 0 5px,transparent 5px 9px);pointer-events:none}
+.fusion #app .research-kicker {display:inline-flex;align-items:center;gap:7px;color:#ccc796;font-size:10px;letter-spacing:.1em}
+.fusion #app .research-kicker::before {content:'';width:6px;height:6px;border:1px solid currentColor;transform:rotate(45deg)}
+.fusion #app .research-next-state {background:#141d20;border:1px solid #49595c;border-right:2px solid var(--ac);padding:12px;box-shadow:none}
+.fusion #app .research-next h1 {font-size:21px;letter-spacing:.04em}
+.fusion #app .research-stage-nav {gap:1px;background:#354247;border-bottom:1px solid #354247}
+.fusion #app .research-stage-nav button {position:relative;background:#1b2428;border:0;border-bottom:2px solid transparent;padding:14px 12px;min-width:0}
+.fusion #app .research-stage-nav button.active {background:#2a302b;border-bottom-color:var(--ac)}
+.fusion #app .research-stage-nav button.active::after {content:'';position:absolute;right:7px;top:7px;width:4px;height:4px;background:var(--ac);pointer-events:none}
+.fusion #app .research-stage-index {font:11px monospace;color:#b0bdbb;padding:4px;border:1px solid #4a585c;align-self:flex-start;line-height:1}
+.fusion #app .research-stage-nav button.active .research-stage-index {color:var(--ac);border-color:#9d9658}
+.fusion #app .research-stage-copy {min-width:0}
+.fusion #app .research-stage-copy small {line-height:1.6;color:#a7b4b5}
+.fusion #app .workflow-agent {position:relative;background:#1b2427;border:1px solid #415055;border-left:2px solid #94b9b6;padding:18px}
+.fusion #app .workflow-agent::after {content:'';position:absolute;right:7px;bottom:7px;width:9px;height:9px;border-right:1px solid #748c8e;border-bottom:1px solid #748c8e;pointer-events:none}
+.fusion #app .workflow-agent h2 {font-size:19px;line-height:1.5}
+.fusion #app .workflow-checklist {border-top:1px solid #3b4b4e;padding-top:12px}
+.fusion #app .idea-root,.fusion #app .conclusion-card {border:1px solid #3d4b50;border-radius:2px;background:#1a2226;box-shadow:none}
+.fusion #app .idea-root.selected {border-left:2px solid var(--ac)}
+.fusion #app .idea-status,.fusion #app .evidence-pill {border-radius:2px;background:#253136}
+.fusion #app .idea-branch {border-left-color:#556d70}
+.fusion #app .conclusion-number,.fusion #app .idea-index {font-family:monospace;color:#a5c7c3}
+.fusion #app .idea-primary {border-radius:2px;box-shadow:none}
+.fusion #app :is(.idea-empty,.workflow-bridge) {border-radius:2px;box-shadow:none}
+.fusion #app .research-stage-nav button:hover {background:#293639}
+.fusion #app .research-stage-nav button.active:hover {background:#343a2e}
+@container (max-width:480px){.fusion #app .research-next{display:block;padding:14px}.fusion #app .research-next-state{margin-top:12px}.fusion #app .research-stage-nav{grid-template-columns:1fr}.fusion #app .research-stage-body{padding:10px}.fusion #app .workflow-agent{padding:12px}}
+@media(forced-colors:active){.fusion #app .research-stage-nav button.active{border:2px solid Highlight}.fusion #app .research-next::after{display:none}}
+/* Shared surfaces and restrained interaction rhythm across all three regions. */
+/* One actual fixed header, rather than two visually aligned scrolling headers. */
+body.fusion {--platform-bar-height:72px;padding-top:var(--platform-bar-height);box-sizing:border-box}
+body.fusion::after {display:none}
+.fusion #app .workspace-bar,.fusion #fusion-chat .fusion-heading {display:none!important}
+.fusion #fusion-chat {height:calc(100dvh - var(--platform-bar-height));min-height:480px;padding-top:12px}
+.fusion #app .content {padding-top:12px}
+.fusion #fusion-divider {top:var(--platform-bar-height)}
+#fusion-platform-bar {position:fixed;top:0;left:58px;right:0;z-index:40;min-height:72px;box-sizing:border-box;display:flex;align-items:center;gap:20px;padding:12px 18px;border-bottom:1px solid #667b79;background:#192428;color:#e5e7e5;box-shadow:0 3px 12px #0002}
+.platform-brand {display:flex;flex-direction:column;gap:5px;min-width:0}
+.platform-brand {position:relative;padding-left:40px}
+.platform-biomedical-mark {position:absolute;left:0;top:0;bottom:0;width:28px;color:#a7cdc3;pointer-events:none}
+.platform-biomedical-mark svg {width:100%;height:100%}
+.platform-brand strong {font-size:16px;font-weight:600;line-height:1.4}
+.platform-brand>span {color:#b7c5c4;font-size:11px}
+.platform-project {display:flex;flex-direction:column;gap:4px;min-width:70px;max-width:240px;margin-left:auto;border-left:1px solid #526566;padding-left:16px}
+.platform-project small {color:#c7bc82;font-size:10px}
+.platform-project b {font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#fusion-platform-bar nav {display:flex;gap:6px;flex-wrap:wrap}
+#fusion-platform-bar button {border:1px solid #52676c;background:#243238;color:#dce7e6;border-radius:3px;padding:7px 10px;font:inherit;font-size:11px;cursor:pointer}
+#fusion-platform-bar button:hover:not(:disabled) {border-color:#c9ba70;background:#334247}
+#fusion-platform-bar button:disabled {opacity:.45;cursor:default}
+#fusion-platform-bar button:focus-visible {outline:2px solid #acd8d0;outline-offset:2px}
+@media(max-width:1100px){#fusion-platform-bar{gap:10px;flex-wrap:wrap}.platform-brand{flex:1 1 260px}.platform-project{max-width:180px}#fusion-platform-bar nav{flex:1 0 100%}}
+@media(max-width:1000px){.fusion #fusion-chat{height:calc(100dvh - var(--platform-bar-height));min-height:480px}}
+@media(max-height:650px){body.fusion{overflow:auto}}
+@media(prefers-reduced-motion:no-preference){#fusion-platform-bar button{transition:background .15s,border-color .15s}}
+@media(forced-colors:active){#fusion-platform-bar{background:Canvas;color:CanvasText;border-color:CanvasText}}
+.fusion {--platform-header-height:64px}
+.fusion #app .content {padding-top:16px}
+.fusion #app .workspace-bar {height:var(--platform-header-height);min-height:var(--platform-header-height);box-sizing:border-box;border-bottom:0;margin-bottom:10px}
+.fusion #fusion-chat {padding-top:16px}
+.fusion #fusion-chat .fusion-heading {height:var(--platform-header-height);min-height:var(--platform-header-height);box-sizing:border-box;border:0;padding:8px 92px 8px 0;margin:0 0 10px;display:flex;flex-direction:column;justify-content:center}
+.fusion .fusion-heading::after {display:none}
+body.fusion::after {content:'';position:fixed;left:58px;right:0;top:79px;height:1px;background:linear-gradient(90deg,#71867f,#3e5156 65%,#c8ba71);z-index:21;pointer-events:none}
+#fusion-role-badge {font-size:10px;padding:2px 6px;border:1px solid #64736a;border-radius:2px;color:#ded19d;background:#d6c5740b;white-space:nowrap}
+.fusion .fusion-management-header {flex-wrap:wrap}
+@media(max-width:1000px){body.fusion::after{display:none}}
+@media(max-height:760px){.fusion #fusion-input{height:52px}}
+.fusion {--surface-panel:#1b2529;--surface-border:#415257;--surface-focus:#a2cec7}
+.fusion #fusion-management {background:var(--surface-panel);border:1px solid var(--surface-border);padding:7px 9px;scrollbar-gutter:stable}
+.fusion .fusion-quick-session #fusion-history {background:#141e22;border-color:var(--surface-border);border-radius:2px}
+.fusion .fusion-more>summary {color:#afc3c3}
+.fusion .fusion-management-header>span {letter-spacing:.05em}
+.fusion .fusion-more[open]>summary {color:var(--ac)}
+.fusion #fusion-workspace {border-top:1px solid var(--surface-border);padding-top:9px;font-size:11px}
+.fusion .fusion-message.activity details {border-radius:2px;border-color:var(--surface-border);background:#182226}
+.fusion #fusion-messages {scrollbar-color:#526b70 transparent}
+.fusion #fusion-form .fusion-runtime-options {display:flex;flex-wrap:wrap;gap:5px;padding:0 0 8px;margin:0 0 8px;border-bottom:1px solid #688c8155;max-height:104px;overflow:auto;flex-shrink:0}
+.fusion #fusion-form .fusion-runtime-options button {min-height:25px;padding:3px 7px;font-size:11px}
+.fusion #fusion-agent {border-color:#98bfa6;color:#d8e6ca;background:#2c403b}
+.fusion #fusion-form #fusion-quota {flex-basis:100%;font-size:10px;line-height:1.4;color:#9db1b2;overflow-wrap:anywhere}
+.fusion .fusion-message.work-summary {border:1px dashed #536d6c;background:#20302f55;padding:10px 12px;color:#aabdbb}
+.fusion .fusion-message.work-summary summary {cursor:pointer;font-size:11px;letter-spacing:.03em}
+.fusion .fusion-message.work-summary details>div {max-height:420px;overflow:auto;margin-top:12px}
+.fusion .fusion-message.report {border:1px solid #799e88;border-left:3px solid #abd0ac;background:#20332b66}
+.fusion .fusion-message.report>b {color:#b8d7b6}
+.fusion .fusion-message.report[data-outcome="failed"],.fusion .fusion-message.report[data-outcome="interrupted"],.fusion .fusion-message.report[data-outcome="unknown"] {border-color:#b59463;background:#3c302244}
+@media(max-height:700px){
+  .fusion #fusion-chat {padding-top:6px;padding-bottom:6px}
+  .fusion .fusion-channel {padding-top:5px;padding-bottom:5px}
+  .fusion .fusion-boot {min-height:28px;padding:3px 8px;margin:3px 0}
+  .fusion #fusion-chat .fusion-management-header {padding:3px 4px;margin-bottom:2px}
+  .fusion #fusion-form {padding:6px}
+  .fusion #fusion-form>label {margin-bottom:2px;font-size:10px}
+  .fusion #fusion-input {height:40px;min-height:40px;padding:4px}
+  .fusion .fusion-actions {margin-top:3px}
+  .fusion .fusion-actions button {padding:5px 9px}
+  .fusion #fusion-form .fusion-runtime-options {padding-bottom:3px;margin-bottom:3px;max-height:80px}
+}
+.fusion #fusion-management {scrollbar-color:#526b70 transparent; border:1px solid #48636766; border-left:2px solid #87bfb6; background:linear-gradient(110deg,#223438aa,#172328);border-radius:4px}
+.fusion #fusion-management[hidden], .fusion #fusion-management-divider[hidden] {display:none!important}
+.fusion .fusion-management-header {border-top:1px solid #5b777566;border-bottom:1px solid #5b777566;padding:8px 4px;gap:8px;background:#1b2b30}
+.fusion .fusion-management-header small {font-size:9px;letter-spacing:1px;color:#92abae}
+.fusion #fusion-management-collapse {margin-left:auto;min-width:48px;border-color:#77ada080;color:#bee1d7}
+.fusion .management-collapsed .fusion-management-header {border-left:2px solid #8dbcb2}
+.fusion .fusion-quick-session {padding:6px;align-items:center}
+.fusion .fusion-quick-session select {border-left:2px solid #97c1b8;min-height:32px}
+.fusion #fusion-submissions {box-sizing:border-box;width:100%;padding:18px;color:#d9e5e4;background:#19292e;border:1px solid #70968d;border-top:3px solid #9ecbbf}
+.fusion .submission-gallery {display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-top:24px}
+.fusion .submission-card {display:flex;flex-direction:column;align-items:center;gap:12px;padding:16px 10px;text-align:center;overflow-wrap:anywhere;background:#203237;border:1px solid #4c696a;cursor:zoom-in}
+.fusion .submission-card:hover {border-color:#b8d7cc;background:#2b4145}
+.fusion .submission-paper {display:grid;place-items:center;width:70px;height:94px;border:1px solid #99b7b2;border-top:5px solid #d2e1d9;background:repeating-linear-gradient(0deg,transparent 0 11px,#8da8a41a 12px 13px);font:12px monospace;color:#d4e3de}
+.fusion #fusion-submissions::backdrop {background:#071115aa;backdrop-filter:blur(8px)}
+.fusion #fusion-submissions header {display:flex;justify-content:space-between;align-items:center;gap:16px}
+.fusion #fusion-submissions small {display:block;font:10px monospace;letter-spacing:2px;color:#8bada8;margin-top:8px}
+.fusion #fusion-submissions p {font-size:12px;color:#a3b7b9;line-height:1.8}
+.fusion .submission-map {display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:24px 0}
+.fusion .submission-map span {padding:16px 8px;border:1px solid #4c696a;border-bottom:3px solid #799f99;font-size:12px;background:#24393c}
+.fusion #fusion-submissions .fusion-document-actions {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.fusion #fusion-submissions button {min-height:34px}
+@media(prefers-reduced-motion:no-preference){
+  .fusion :is(.research-stage-nav button,.idea-primary,.fusion-quick-session button,.fusion-actions button){transition:background .18s,border-color .18s,box-shadow .18s}
+  .fusion :is(.idea-primary,.fusion-quick-session button,.fusion-actions button):hover:not(:disabled){box-shadow:inset 0 -2px #a2cec766}
+  .fusion .fusion-message-enter {animation:fusion-message-arrive .22s ease-out both}
+  .fusion .fusion-more[open]>.fusion-telemetry {animation:fusion-message-arrive .2s ease-out}
+  @keyframes fusion-message-arrive{from{opacity:.25;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+}
+
+/* ── 智能体提问组件（ask-user-question，内置对话窗口）── */
+.fusion #fusion-ask {flex:0 0 auto;margin:0 0 8px;padding:12px 13px;border:1px solid #536068;border-left:3px solid var(--ac);background:linear-gradient(105deg,rgba(241,211,90,.07),transparent 62%),#1b2429;box-sizing:border-box}
+.fusion .fusion-ask-head {display:flex;justify-content:space-between;gap:10px;align-items:baseline;margin-bottom:9px}
+.fusion .fusion-ask-eyebrow {color:var(--ac);font:10px monospace;letter-spacing:.13em}
+.fusion .fusion-ask-progress {color:var(--t2);font-size:10px}
+.fusion .fusion-ask-form {display:flex;flex-direction:column;gap:10px}
+.fusion .fusion-ask-question {position:relative;border:1px solid var(--bd);border-radius:8px;margin:0;padding:10px 11px;min-width:0}
+.fusion .fusion-ask-question.skipped {opacity:.6}
+.fusion .fusion-ask-question legend {display:flex;align-items:center;gap:7px;padding:0 4px;font-size:12px;color:var(--tx);font-weight:600}
+.fusion .fusion-ask-index {background:var(--ac);color:#151816;font:10px monospace;padding:1px 5px;border-radius:3px}
+.fusion .fusion-ask-text {margin:2px 0 9px;color:var(--t2);font-size:12px;line-height:1.65}
+.fusion .fusion-ask-options {display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.fusion .fusion-ask-option {position:relative;display:flex;flex-direction:column;gap:2px;text-align:left;width:100%;padding:8px 10px;border:1px solid var(--bd);background:#161e22;color:var(--tx);cursor:pointer;border-radius:6px;font:inherit}
+.fusion .fusion-ask-option b {font-size:12px}
+.fusion .fusion-ask-option span {color:var(--t2);font-size:11px;line-height:1.5}
+.fusion .fusion-ask-option:hover:not(:disabled) {border-color:var(--ac)}
+.fusion .fusion-ask-option.selected {border-color:var(--ac);background:linear-gradient(100deg,rgba(241,211,90,.16),#1b2429);box-shadow:inset 3px 0 var(--ac)}
+.fusion .fusion-ask-option.selected::after {content:'✓';position:absolute;right:10px;top:8px;color:var(--ac);font-weight:700}
+.fusion .fusion-ask-custom {width:100%;box-sizing:border-box;background:#111416;border:1px solid #697273;color:var(--tx);padding:8px 10px;font:inherit;font-size:12px;border-radius:6px}
+.fusion .fusion-ask-custom::placeholder {color:var(--t2)}
+.fusion .fusion-ask-skip {align-self:flex-start;background:transparent;border:0;color:var(--t2);font-size:10px;cursor:pointer;padding:4px 0;text-decoration:underline}
+.fusion .fusion-ask-skip:hover {color:var(--ac)}
+.fusion .fusion-ask-actions {display:flex;gap:8px;align-items:center}
+.fusion .fusion-ask-submit {padding:8px 14px;background:var(--ac);color:#151816;border:1px solid var(--ac);font-weight:700;cursor:pointer;clip-path:polygon(0 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%)}
+.fusion .fusion-ask-submit:disabled {opacity:.45;cursor:default}
+.fusion .fusion-ask-cancel {padding:8px 12px;background:transparent;border:1px solid var(--bd);color:var(--tx);cursor:pointer}
+.fusion #fusion-chat :is(.fusion-ask-option,.fusion-ask-custom,.fusion-ask-skip,.fusion-ask-submit,.fusion-ask-cancel):focus-visible {outline:2px solid var(--ac);outline-offset:2px}
+@media(prefers-reduced-motion:no-preference){ .fusion #fusion-ask {animation:fusion-message-arrive .2s ease-out both} }
+
+/* ── 审批卡片（DSH session/request_permission，内置对话窗口）── */
+.fusion #fusion-approval {flex:0 0 auto;margin:0 0 8px;padding:12px 13px;border:1px solid #6b5b3a;border-left:3px solid #e79565;background:linear-gradient(105deg,rgba(231,149,101,.09),transparent 62%),#241f1c;box-sizing:border-box}
+.fusion .fusion-approval-detail {max-height:190px;overflow:auto;margin:2px 0 8px;padding:9px 10px;background:#14100e;border:1px solid #4c4038;border-radius:6px;color:#e8d9cd;font:11px/1.6 var(--vscode-editor-font-family,monospace);white-space:pre-wrap;overflow-wrap:anywhere}
+.fusion .fusion-approval-note {margin:0 0 9px;color:var(--t2);font-size:11px;line-height:1.6}
+.fusion .fusion-approval-actions {flex-wrap:wrap}
+.fusion .fusion-ask-option.danger {border-color:#b5674a;background:#2a1c17}
+.fusion .fusion-ask-option.danger.selected,.fusion .fusion-ask-option.danger:hover {border-color:#e79565;box-shadow:inset 3px 0 #e79565}
+.fusion .fusion-ask-option.danger b {color:#ffb98a}
+.fusion #fusion-chat :is(.fusion-approval-detail,.fusion-approval-actions button):focus-visible {outline:2px solid #e79565;outline-offset:2px}
+@media(prefers-reduced-motion:no-preference){ .fusion #fusion-approval {animation:fusion-message-arrive .2s ease-out both} }
+
+/* ── 交互卡片可达性 ──
+   卡片本身是 flex 列：问题/详情可滚动，操作按钮固定在卡片底部始终可见；
+   卡片出现时收起管理台、让消息区让出高度，并允许对话区滚动，
+   避免按钮被 #fusion-chat / 卡片的 overflow 裁掉。 */
+.fusion #fusion-ask, .fusion #fusion-approval {display:flex;flex-direction:column;flex:0 0 auto;position:relative;z-index:2;max-height:min(50vh,440px);overflow:hidden}
+.fusion #fusion-ask[hidden], .fusion #fusion-approval[hidden] {display:none}
+.fusion .fusion-ask-form {display:flex;flex-direction:column;min-height:0;gap:8px}
+.fusion .fusion-ask-body {display:flex;flex-direction:column;gap:10px;min-height:0;flex:1 1 auto;overflow:auto}
+.fusion .fusion-ask-actions {flex:none}
+.fusion #fusion-chat.has-interaction {overflow-y:auto}
+.fusion #fusion-chat.has-interaction #fusion-messages {min-height:0;flex:0 1 60px}
+.fusion #fusion-chat.has-interaction #fusion-management,
+.fusion #fusion-chat.has-interaction .fusion-management-header,
+.fusion #fusion-chat.has-interaction .fusion-boot,
+.fusion #fusion-chat.has-interaction #fusion-management-divider {display:none}
+.fusion .fusion-approval-detail {max-height:130px}
+.fusion #fusion-ask button, .fusion #fusion-ask input, .fusion #fusion-approval button {pointer-events:auto}

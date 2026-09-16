@@ -1,0 +1,8 @@
+# 发布安装包仅在明确发布时生成，不作为日常开发产物保留。
+*.vsix
+dist/
+
+# 依赖与构建产物（从源码安装时按 package.json 重建）
+node_modules/
+out/
+*.tsbuildinfo

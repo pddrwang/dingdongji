@@ -1,0 +1,19 @@
+# 保留 src/ 下的运行时资源（webview/hooks/agents/plot，自包含所需）；排除以下非必需项
+deprecated/**
+biomed-research-bus.deprecated.md
+node_modules/**
+**/__pycache__/**
+**/*.map
+**/.DS_Store
+**/.gitignore
+
+# 内部维护资料，不随扩展分发
+docs/**
+Publishing.md
+
+# 开发期 TypeScript 源码与构建配置；运行时使用 out/ 与 src/ 资源
+src/**/*.ts
+tsconfig.json
+
+# 本地打包产物，不进入包内
+dist/**
