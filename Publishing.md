@@ -43,7 +43,9 @@ CODE="/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code"
 2. 用户明确批准后执行：`VSCE_PAT=<本机提供> npx vsce publish --no-dependencies` → 发布成功。
 3. 令牌未写入任何文件、未打印；发布后仍建议在 Azure DevOps 撤销并按需重建。
 
-**安全提醒**：本次发布用的 PAT 由用户在对话中提供，视为已泄露，应立即在 Azure DevOps 撤销并重建；新建令牌只配置在本机（`vsce login` 或仅本进程环境变量），不要粘贴到对话。
+**凭据入库（脱敏）**：发布 PAT 已写入本机密钥库 `~/ddj/api_keys.json` 的 `vsce_marketplace` 条目（`env_var: VSCE_PAT`，文件 0600）。`source ~/ddj/load_keys.sh` 后即可 `npx vsce publish`；后端 `/api/apis` 只显示 `{set: true, masked: true}`，不返回原值。后续发布优先用该条目，勿在对话/仓库中出现密钥。
+
+**安全提醒**：本次入库的 PAT 由用户在对话中提供，视为已泄露，应在 Azure DevOps 撤销并重建；重建后请更新 `vsce_marketplace.key`（或用 `vsce login`），不要粘贴到对话。
 
 ## 维护依据
 
