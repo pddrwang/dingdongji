@@ -1,5 +1,16 @@
 # 更新日志 (Changelog)
 
+## [Unreleased] Codex 掉线加固与 DSH 能力对齐 - 2026-09-22
+
+以下为当前源码的阶段汇总，不表示已发布。
+
+- **Codex 掉线加固**：新增 30 分钟静默看门狗（只断开、不自动重放，避免重复执行）；进程退出信息带信号；识别 `error`/`turn/failed` 上游错误并给出可读原因；连接状态显示错误摘要。
+- **失败汇报更清晰**：轮次失败/中断时使用状态化兜底文案（提示可能有上游错误、可重试；中断不会自动重放），不再统一显示"未收到最终汇报"。
+- **DSH 图像附件**：从此前直接拒绝改为 ACP `resource_link` 转发，并强制校验附件位于当前项目工作区内；与 Codex 的本地图像附件能力对齐（实际是否被模型读取取决于 DSH 路由的图像能力）。
+- **DSH 官方能力登记**：核查 `dsh --profile acp --dump-config` 的 85 个官方包，将会话恢复、模型/推理强度、权限审批、上下文压缩、技能/网页检索/子代理/工作流、图像附件登记为可发现能力；未安装任何第三方插件、未改动 dsh 默认 profile。
+- **已知缺口（如实记录）**：DSH over ACP 不支持 elicitation，`dsh-tool-ask-user` 不在 acp profile，因此 DSH 无法像 Codex `requestUserInput` 那样弹出提问卡片。
+- **验证**：`npm run verify` 通过；项目 node 回归 10/10 通过（`test_deepseek_compatibility.cjs` 已按 resource_link 新行为更新）。
+
 ## [Unreleased] 内置对话窗口的交互卡片（提问 + 审批）- 2026-09-16
 
 以下为当前源码的阶段汇总，不表示已发布。

@@ -1,5 +1,7 @@
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process';
 import { createInterface } from 'readline';
+import * as path from 'path';
+import { pathToFileURL } from 'url';
 import { AgentMessage, AgentSession, TurnOutcome } from './agentSession';
 
 // A new adapter must not resume a durable thread while the old process still owns its lease.
@@ -42,7 +44,7 @@ export class DeepSeekSession implements AgentSession {
       await closingProcesses.get(this.workspace);
       if (generation !== this.generation) throw new Error('Harness 连接已取消');
       this.child = spawn(this.executable(), ['--profile', 'acp'], { cwd: this.workspace, stdio: 'pipe' });
-      const fail = () => { if (generation === this.generation) this.fail('Harness 连接已结束；请核对安装、ACP 配置与执行产物。'); };
+      const fail = (_code?: number, signal?: string) => { if (generation === this.generation) this.fail(`Harness ACP 流连接已断开${signal ? `（${signal}）` : ''}；请核对安装、ACP 配置与执行产物。`); };
       this.child.on('error', fail); this.child.on('exit', fail); this.child.stdin.on('error', fail);
       this.child.stderr.on('data', () => {}); // Drain only; diagnostics may contain secrets.
       createInterface({ input: this.child.stdout }).on('line', line => { if (generation !== this.generation) return; try { this.receive(JSON.parse(line)); } catch {} });
@@ -104,7 +106,12 @@ export class DeepSeekSession implements AgentSession {
   }
   async send(text: string, brief: string, attachments: { path: string; image: boolean }[] = []) {
     if (this.busy) throw new Error('Harness 正在执行');
-    if (attachments.some(a => a.image)) throw new Error('当前 Harness 适配器尚未启用图像附件，请切换 Codex 或改用文本文件路径。');
+    const imageLinks = attachments.filter(a => a.image).map(a => {
+      const absolute = path.resolve(a.path);
+      const root = path.resolve(this.workspace) + path.sep;
+      if (!absolute.startsWith(root)) throw new Error('Harness 图像附件必须位于当前项目工作区内。');
+      return { type: 'resource_link', name: path.basename(absolute), uri: pathToFileURL(absolute).toString() };
+    });
     const operation = ++this.operation;
     this.busy = true;
     const generation = this.generation;
@@ -112,7 +119,7 @@ export class DeepSeekSession implements AgentSession {
       await this.start();
       if (!this.busy) return false;
       this.messages.push({ role: 'user', text: text + attachments.map(a => `\n附件：${a.path}`).join('') }); this.emit();
-      const result = await this.request('session/prompt', { sessionId: this.threadId, prompt: [{ type: 'text', text: `${brief}\n\n用户本次请求：\n${text}${attachments.map(a => `\n用户选择的附件路径（读取前核对）：${a.path}`).join('')}` }] }, 30 * 60 * 1000);
+      const result = await this.request('session/prompt', { sessionId: this.threadId, prompt: [{ type: 'text', text: `${brief}\n\n用户本次请求：\n${text}${attachments.map(a => `\n用户选择的附件路径（读取前核对）：${a.path}`).join('')}` }, ...imageLinks] }, 30 * 60 * 1000);
       this.busy = false;
       this.lastTurn = { id: String(operation), status: result.stopReason === 'cancelled' ? 'interrupted' : result.stopReason === 'end_turn' ? 'completed' : 'unknown' };
       if (result.stopReason !== 'end_turn') this.messages.push({ role: 'system', text: `Harness 本轮结束：${result.stopReason || '未知状态'}；请检查结果。` });

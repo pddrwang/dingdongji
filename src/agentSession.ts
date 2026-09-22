@@ -57,8 +57,14 @@ export class ProjectAgentSession {
     const items = this.messages.slice(round.start);
     const answers = items.filter(m => m.role === 'assistant' && m.phase !== 'commentary');
     const final = [...answers].reverse().find(m => m.phase === 'final_answer') || answers[answers.length - 1];
+    const report = final?.text?.trim();
+    const fallback = status === 'failed'
+      ? '本轮失败：智能体或传输未完成最终回报。请展开工作记录核对错误与已执行产物；不代表任务已经完成，可在确认状态后重试。'
+      : status === 'interrupted'
+        ? '本轮已中断：请展开工作记录核对已执行产物；不会自动重放指令。'
+        : '未收到最终汇报，请展开工作记录核对；不代表任务已经完成。';
     this.rounds.push({ id: round.id, agent: round.agent, start: round.start, end: this.messages.length, status,
-      report: final?.text?.trim() || '未收到最终汇报，请展开工作记录核对；不代表任务已经完成。', finishedAt: new Date().toISOString() });
+      report: report || fallback, finishedAt: new Date().toISOString() });
   }
   get busy() { return this.sending || [...this.adapters.values()].some(a => a.busy); }
   get settings() { return this.adapter().settings; }

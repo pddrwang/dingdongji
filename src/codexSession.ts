@@ -19,6 +19,7 @@ export class CodexSession {
   lastTurn?: TurnOutcome;
   private compacting = false;
   private compactTimer?: NodeJS.Timeout;
+  private turnTimer?: NodeJS.Timeout;
   private compaction = '每轮结束后自动压缩 Codex 上下文';
   private completedTurns = new Set<string>();
   settings: { model?: string; effort?: string; permission: 'read' | 'workspace' | 'full' } = { permission: 'workspace' };
@@ -74,12 +75,12 @@ export class CodexSession {
   }
   private fail(error: Error) {
     if (this.busy && !this.compacting) this.lastTurn = { id: String(this.operation), status: 'failed' };
-    clearTimeout(this.compactTimer); this.compacting = false;
+    clearTimeout(this.compactTimer); clearTimeout(this.turnTimer); this.compacting = false;
     const child = this.process; this.process = undefined; ++this.generation; child?.kill();
     for (const p of this.pending.values()) { clearTimeout(p.timer); p.reject(error); }
     this.pending.clear(); this.busy = false; this.turnId = undefined;
     this.ready = undefined;
-    this.connection.status = '连接中断';
+    this.connection.status = `连接中断 · ${error.message.slice(0, 120)}`;
     this.messages.push({ role: 'system', text: error.message }); this.emit();
   }
   private async start() {
@@ -91,7 +92,10 @@ export class CodexSession {
       this.process = spawn(executable, ['app-server', '--listen', 'stdio://'], { cwd: this.workspace, stdio: 'pipe' });
       const fail = (error: Error) => { if (generation === this.generation) this.fail(error); };
       this.process.on('error', fail);
-      this.process.on('exit', () => fail(new Error('Codex 连接已结束。请核对已执行产物后重新发送；不会自动重放指令。')));
+      this.process.on('exit', (_code, signal) => {
+        const detail = signal ? `信号 ${signal}` : '进程结束';
+        fail(new Error(`Codex 流连接已断开（${detail}）。已保留工作记录；请核对产物后重新发送，不会自动重放指令。`));
+      });
       this.process.stdin.on('error', fail);
       this.process.stderr.on('data', () => { /* Drain diagnostics; never forward credentials or raw stderr. */ });
       createInterface({ input: this.process.stdout }).on('line', line => {
@@ -149,6 +153,7 @@ export class CodexSession {
       if (p.turn?.id && this.completedTurns.has(p.turn.id)) return;
       if (p.turn?.id) this.completedTurns.add(p.turn.id);
       this.busy = false; this.turnId = undefined;
+      clearTimeout(this.turnTimer);
       if (this.compacting) {
         clearTimeout(this.compactTimer); this.compacting = false;
         this.compaction = p.turn?.status === 'completed' && !p.turn?.error ? '模型上下文已压缩 · 完整记录保留' : '压缩未完成 · 完整记录保留';
@@ -159,6 +164,11 @@ export class CodexSession {
       if (p.turn?.error) this.messages.push({ role: 'system', text: p.turn.error.message || '执行失败' });
       this.emit();
       if (status === 'completed') void this.compact();
+      return;
+    }
+    if (m.method === 'error' || m.method === 'turn/failed') {
+      const message = typeof p.error?.message === 'string' ? p.error.message : typeof p.message === 'string' ? p.message : 'Codex 流处理失败';
+      if (this.busy) this.fail(new Error(`Codex 上游错误：${message}`));
       return;
     }
     this.emit();
@@ -173,7 +183,15 @@ export class CodexSession {
       const sandboxPolicy = this.settings.permission === 'full' ? { type: 'dangerFullAccess' } : this.settings.permission === 'read' ? { type: 'readOnly', networkAccess: false } : { type: 'workspaceWrite', writableRoots: [this.workspace], networkAccess: false, excludeTmpdirEnvVar: true, excludeSlashTmp: true };
       const result = await this.request('turn/start', { threadId: this.threadId, ...(this.settings.model ? { model: this.settings.model } : {}), ...(this.settings.effort ? { effort: this.settings.effort } : {}), sandboxPolicy, approvalPolicy: this.settings.permission === 'read' ? 'never' : 'on-request', input: [{ type: 'text', text: `${brief}\n\n用户本次请求：\n${text}`, text_elements: [] }, ...attachments.map(a => a.image ? { type: 'localImage', path: a.path } : { type: 'mention', name: path.basename(a.path), path: a.path })] });
       if (typeof result?.turn?.id !== 'string') throw new Error('Codex turn 响应不兼容；请检查连接与产物，勿重复提交。');
-      if (this.busy && !this.compacting) this.turnId = result.turn.id;
+      if (this.busy && !this.compacting) {
+        this.turnId = result.turn.id;
+        // A silent transport must not leave the UI busy forever. This is a
+        // watchdog only; it never retries or replays an accepted turn.
+        clearTimeout(this.turnTimer);
+        this.turnTimer = setTimeout(() => {
+          if (this.busy && this.turnId === result.turn.id) this.fail(new Error('Codex 流超过 30 分钟没有完成事件；已断开以避免重复执行。请核对产物后重试。'));
+        }, 30 * 60 * 1000);
+      }
       return true;
     } catch (error) {
       if (operation !== this.operation) return;
@@ -189,7 +207,7 @@ export class CodexSession {
   }
   dispose() {
     if (this.busy && !this.compacting) this.lastTurn = { id: String(this.operation), status: 'interrupted' };
-    clearTimeout(this.compactTimer); this.compacting = false;
+    clearTimeout(this.compactTimer); clearTimeout(this.turnTimer); this.compacting = false;
     ++this.operation;
     ++this.generation;
     const child = this.process; this.process = undefined; child?.kill();
