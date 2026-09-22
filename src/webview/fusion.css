@@ -339,3 +339,13 @@ body.fusion::after {content:'';position:fixed;left:58px;right:0;top:79px;height:
 .fusion #fusion-chat.has-interaction #fusion-management-divider {display:none}
 .fusion .fusion-approval-detail {max-height:130px}
 .fusion #fusion-ask button, .fusion #fusion-ask input, .fusion #fusion-approval button {pointer-events:auto}
+
+/* ── docx→HTML 面板内预览（mammoth/textutil）── */
+.fusion .fusion-preview-content.fusion-docx-body {white-space:normal;line-height:1.75}
+.fusion .fusion-docx-body h1,.fusion .fusion-docx-body h2,.fusion .fusion-docx-body h3,.fusion .fusion-docx-body h4 {margin:14px 0 8px}
+.fusion .fusion-docx-body p {margin:8px 0}
+.fusion .fusion-docx-body ul,.fusion .fusion-docx-body ol {margin:8px 0;padding-left:22px}
+.fusion .fusion-docx-body table {border-collapse:collapse;margin:10px 0;width:100%}
+.fusion .fusion-docx-body :is(td,th) {border:1px solid var(--bd);padding:5px 8px;text-align:left;vertical-align:top}
+.fusion .fusion-docx-body img {max-width:100%;height:auto}
+.fusion .fusion-docx-body blockquote {margin:10px 0;padding-left:12px;border-left:3px solid var(--bd);color:var(--t2)}

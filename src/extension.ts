@@ -1048,6 +1048,27 @@ async function openManuscriptNative(file: string): Promise<void> {
   await vscode.commands.executeCommand('vscode.open', uri, { viewColumn: vscode.ViewColumn.Beside, preserveFocus: false });
 }
 
+/** Convert a .docx to HTML for the in-panel preview (free, local only).
+ *  mammoth (bundled in ~/ddj/venvs/docx-render) gives semantic HTML with
+ *  inline base64 images; macOS textutil is the fallback (text/layout, no images). */
+async function docxToHtml(file: string): Promise<{ html: string; tool: string } | null> {
+  const python = path.join(os.homedir(), 'ddj', 'venvs', 'docx-render', 'bin', 'python');
+  if (fs.existsSync(python)) {
+    const script = 'import sys, mammoth; sys.stdout.reconfigure(encoding="utf-8"); sys.stdout.write(mammoth.convert_to_html(open(sys.argv[1], "rb")).value)';
+    try {
+      const html = await new Promise<string>((resolve, reject) => cp.execFile(python, ['-c', script, file], { timeout: 25000, maxBuffer: 48 * 1024 * 1024 }, (error, stdout) => error ? reject(error) : resolve(stdout)));
+      if (html.trim()) return { html, tool: 'mammoth' };
+    } catch { /* fall back to textutil */ }
+  }
+  if (process.platform === 'darwin' && fs.existsSync('/usr/bin/textutil')) {
+    try {
+      const html = await new Promise<string>((resolve, reject) => cp.execFile('/usr/bin/textutil', ['-convert', 'html', '-stdout', file], { timeout: 20000, maxBuffer: 16 * 1024 * 1024 }, (error, stdout) => error ? reject(error) : resolve(stdout)));
+      if (html.trim()) return { html, tool: 'textutil（不含图片）' };
+    } catch { /* fall back to plain text */ }
+  }
+  return null;
+}
+
 function stepLabel(state: pipeline.PipelineState): string {
   const cur = pipeline.getCurrentStep(state);
   return cur ? cur.label : '—';
@@ -1211,12 +1232,24 @@ async function handleMessage(context: vscode.ExtensionContext, msg: any, source:
           const chosen = msg.path || await vscode.window.showQuickPick(entries, { title: '当前工作区手稿 · 人工初审' });
           if (!chosen || !same()) break;
           const file = projectPath(ws, chosen);
-          if (/\.(pdf|docx)$/i.test(file)) {
+          if (/\.docx$/i.test(file)) {
+            if (fs.statSync(file).size > 40 * 1024 * 1024) throw new Error('docx 超过 40 MB，请用原生查看器打开');
+            // 免费本地渲染为 HTML，面板内小窗口预览，不切换页面。
+            const rendered = await docxToHtml(file);
+            if (rendered) {
+              if (same()) fusionPanel?.webview.postMessage({ type: 'fusionManuscript', workspace: ws, sourcePath: chosen, path: chosen + `（docx 预览 · ${rendered.tool}）`, html: rendered.html });
+              break;
+            }
+            if (process.platform !== 'darwin' || !fs.existsSync('/usr/bin/textutil')) { await openManuscriptNative(file); void vscode.window.showInformationMessage('本机缺少 docx 渲染器，已用原生查看器打开。'); break; }
+            const plain = await new Promise<string>((resolve, reject) => cp.execFile('/usr/bin/textutil', ['-convert', 'txt', '-stdout', file], { timeout: 15000, maxBuffer: 2 * 1024 * 1024 }, (err, stdout) => err ? reject(new Error('docx 渲染与文本提取均失败，请用原生查看器')) : resolve(stdout)));
+            if (same()) fusionPanel?.webview.postMessage({ type: 'fusionManuscript', workspace: ws, sourcePath: chosen, path: chosen + '（文本预览，不保留分页与图表）', text: plain || '未提取到文本，可能为扫描文件。' });
+            break;
+          }
+          if (/\.pdf$/i.test(file)) {
             if (fs.statSync(file).size > 20 * 1024 * 1024) throw new Error('文档超过 20 MB，请用原生编辑器查看');
-            const converter = /\.docx$/i.test(file) && process.platform === 'darwin' ? '/usr/bin/textutil' : '/opt/homebrew/bin/pdftotext';
-            if (!fs.existsSync(converter) || (/\.docx$/i.test(file) && process.platform !== 'darwin')) { await openManuscriptNative(file); void vscode.window.showInformationMessage('本机缺少文本提取器，已用原生 docx 查看器打开。'); break; }
-            const args = /\.docx$/i.test(file) ? ['-convert', 'txt', '-stdout', file] : ['-layout', file, '-'];
-            const content = await new Promise<string>((resolve, reject) => cp.execFile(converter, args, { timeout: 15000, maxBuffer: 2 * 1024 * 1024 }, (err, stdout) => err ? reject(new Error('文本提取失败，请使用原生查看器')) : resolve(stdout)));
+            const converter = '/opt/homebrew/bin/pdftotext';
+            if (!fs.existsSync(converter)) { await openManuscriptNative(file); void vscode.window.showInformationMessage('本机缺少 PDF 文本提取器，已用 PDF 预览打开。'); break; }
+            const content = await new Promise<string>((resolve, reject) => cp.execFile(converter, ['-layout', file, '-'], { timeout: 15000, maxBuffer: 2 * 1024 * 1024 }, (err, stdout) => err ? reject(new Error('文本提取失败，请使用原生查看器')) : resolve(stdout)));
             if (same()) fusionPanel?.webview.postMessage({ type: 'fusionManuscript', workspace: ws, sourcePath: chosen, path: chosen + '（文本预览，不保留分页与图表）', text: content || '未提取到文本，可能为扫描文件。' });
             break;
           }

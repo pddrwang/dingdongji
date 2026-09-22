@@ -341,7 +341,7 @@
     approvalSection.scrollIntoView({ block: 'nearest' });
   }
   const documents = document.createElement('div'); documents.className = 'fusion-document-actions';
-  for (const [label, command, action] of [['刷新当前工作区手稿','fusionManuscripts','list'],['手稿预览','fusionManuscripts','preview'],['原生 docx 窗口','fusionManuscripts','native'],['作者信息','fusionAuthors','list'],['添加作者','fusionAuthors','add'],['编辑作者库','fusionAuthors','edit'],['写入手稿署名','fusionAuthors','insert']]) {
+  for (const [label, command, action] of [['刷新当前工作区手稿','fusionManuscripts','list'],['手稿预览','fusionManuscripts','preview'],['外部查看器打开','fusionManuscripts','native'],['作者信息','fusionAuthors','list'],['添加作者','fusionAuthors','add'],['编辑作者库','fusionAuthors','edit'],['写入手稿署名','fusionAuthors','insert']]) {
     const button = document.createElement('button'); button.textContent = label;
     button.dataset.projectScoped = String(command === 'fusionManuscripts' || action === 'insert');
     button.onclick = () => { if (command === 'fusionManuscripts' && action === 'list') { gallery.textContent = '正在刷新当前工作区…'; preview.close(); } host.postMessage({ command, action, workspace }); }; documents.appendChild(button);
@@ -350,14 +350,33 @@
   submissions.innerHTML = '<header><strong>投稿管理 <small>全局作者库 / 当前工作区手稿</small></strong></header><p>刷新提取当前工作区的手稿，点击卡片进行人工初审。读取「手稿文书」及「结果文件/manuscript」，不复制、不自动审查或修改文件。</p><p id="submission-workspace"></p><div class="submission-map"><span>01 / 刷新手稿</span><span>02 / 人工初审</span><span>03 / 署名确认</span></div>';
   submissions.appendChild(documents);
   const gallery = document.createElement('div'); gallery.className = 'submission-gallery'; submissions.appendChild(gallery);
-  window.ddjRenderSubmissions = panel => { panel.replaceChildren(submissions); submissions.querySelector('#submission-workspace').textContent = workspace || '请先打开工作区'; gallery.textContent = '点击「刷新当前工作区手稿」读取最新文件。'; };
+  // 手稿列表缓存在 webview 侧：任何状态刷新都不会清空已加载的卡片（此前会“刷完很快消失”）。
+  let submissionFiles = [], submissionLoaded = false;
+  function renderSubmissionGallery() {
+    gallery.replaceChildren();
+    for (const file of submissionFiles) {
+      const card = document.createElement('button'); card.className = 'submission-card';
+      const mark = document.createElement('span'); mark.className = 'submission-paper'; mark.textContent = file.split('.').pop().toUpperCase();
+      const label = document.createElement('span'); label.textContent = file.split('/').pop();
+      card.append(mark, label); card.title = '点击在小窗口预览 · ' + file;
+      card.onclick = () => host.postMessage({ command: 'fusionManuscripts', action: 'preview', path: file, workspace });
+      gallery.appendChild(card);
+    }
+    if (!gallery.children.length) gallery.textContent = '当前工作区未发现手稿。请将文件放入「手稿文书」或「结果文件/manuscript」后刷新。';
+  }
+  window.ddjRenderSubmissions = panel => {
+    panel.replaceChildren(submissions);
+    submissions.querySelector('#submission-workspace').textContent = workspace || '请先打开工作区';
+    if (submissionLoaded) renderSubmissionGallery();
+    else gallery.textContent = '点击「刷新当前工作区手稿」读取最新文件。';
+  };
   const preview = document.createElement('dialog'); preview.id = 'fusion-preview';
   preview.innerHTML = '<header><strong>全局投稿管理</strong><button type="button">关闭</button></header><div class="fusion-preview-content"></div>';
   document.body.appendChild(preview); preview.querySelector('button').onclick = () => preview.close();
   preview.addEventListener('click', e => { if (e.target === preview) { const r = preview.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) preview.close(); } });
   const openOriginal = document.createElement('button'); openOriginal.textContent = '在编辑器中打开';
-  const openNative = document.createElement('button'); openNative.textContent = '原生 docx 窗口'; openNative.hidden = true;
-  openNative.title = '用已安装的 WPS / Office 查看器打开真正的 docx（不改动文件）';
+  const openNative = document.createElement('button'); openNative.textContent = '外部查看器打开'; openNative.hidden = true;
+  openNative.title = '可选：用已安装的第三方查看器打开 docx（可能收费）；免费预览已在上方';
   preview.append(openOriginal, openNative);
   let previewPath;
   openOriginal.onclick = () => host.postMessage({ command: 'fusionManuscripts', action: 'open', path: previewPath, workspace });
@@ -426,23 +445,15 @@
       return;
     }
     if (m.type === 'fusionManuscriptList' && workspace && m.workspace === workspace) {
-      gallery.replaceChildren();
-      for (const file of m.files || []) {
-        const card = document.createElement('button'); card.className = 'submission-card';
-        const mark = document.createElement('span'); mark.className = 'submission-paper'; mark.textContent = file.split('.').pop().toUpperCase();
-        const label = document.createElement('span'); label.textContent = file.split('/').pop();
-        const nativeDoc = /\.(docx|doc|docm)$/i.test(file);
-        card.append(mark, label); card.title = (nativeDoc ? '点击打开原生 docx 窗口 · ' : '点击放大预览 · ') + file;
-        card.onclick = () => host.postMessage({ command: 'fusionManuscripts', action: nativeDoc ? 'native' : 'preview', path: file, workspace });
-        gallery.appendChild(card);
-      }
-      if (!gallery.children.length) gallery.textContent = '当前工作区未发现手稿。请将文件放入「手稿文书」或「结果文件/manuscript」后刷新。';
+      submissionFiles = m.files || []; submissionLoaded = true; renderSubmissionGallery();
     }
     if ((m.type === 'fusionManuscript' && workspace && m.workspace === workspace) || (m.type === 'fusionAuthorList' && m.scope === 'global')) {
       previewPath = m.sourcePath; openOriginal.hidden = !previewPath;
       openNative.hidden = !(previewPath && /\.(docx|doc|docm)$/i.test(previewPath));
       const body = preview.querySelector('.fusion-preview-content'); body.replaceChildren();
-      if (m.type === 'fusionManuscript') { preview.querySelector('strong').textContent = m.path; renderMessage(body, m.text); }
+      const hasHtml = typeof m.html === 'string' && !!m.html;
+      body.classList.toggle('fusion-docx-body', hasHtml);
+      if (m.type === 'fusionManuscript') { preview.querySelector('strong').textContent = m.path; if (hasHtml) renderDocxHtml(body, m.html); else renderMessage(body, m.text); }
       else { preview.querySelector('strong').textContent = '全局作者库'; for (const a of m.authors || []) { const p = document.createElement('p'); p.textContent = `${a.name}${a.corresponding ? '（通讯作者）' : ''} — ${a.affiliation}\nORCID：${a.orcid || '未提供'}\n贡献：${a.contribution || '待确认'}`; body.appendChild(p); } if (!body.children.length) body.textContent = '尚未添加作者。'; }
       if (!preview.open) preview.showModal();
     }
@@ -483,6 +494,7 @@
       chat.querySelector('#fusion-progress-label').textContent = steps.length ? `管线验收 ${done} / ${steps.length} · ${Math.round(done / steps.length * 100)}%` : '尚未绑定研究管线';
       if (workspace !== m.workspacePath) {
         preview.close(); previewPath = undefined; preview.querySelector('.fusion-preview-content').replaceChildren();
+        submissionFiles = []; submissionLoaded = false;
         gallery.textContent = '项目已切换，请刷新当前工作区手稿。';
         submissions.querySelector('#submission-workspace').textContent = m.workspacePath || '请先打开工作区';
         runtime.querySelector('#fusion-quota').textContent = '余量尚未读取';
@@ -593,5 +605,28 @@
         }
       }
     }
+  }
+  // docx→HTML 预览：白名单清洗后渲染，脚本/事件/未知属性一律丢弃。
+  const DOCX_TAGS = new Set(['P','H1','H2','H3','H4','H5','H6','UL','OL','LI','TABLE','THEAD','TBODY','TFOOT','TR','TD','TH','STRONG','B','EM','I','U','S','STRIKE','A','IMG','BR','BLOCKQUOTE','PRE','CODE','SUP','SUB','SPAN','DIV','HR']);
+  function sanitizeDocxNode(node) {
+    if (node.nodeType === 3) return document.createTextNode(node.nodeValue);
+    if (node.nodeType !== 1) return null;
+    const tag = node.tagName.toUpperCase();
+    if (!DOCX_TAGS.has(tag)) return null;
+    const el = document.createElement(tag);
+    if (tag === 'A') {
+      const href = node.getAttribute('href') || '';
+      if (/^(https?:\/\/|mailto:)/i.test(href)) { el.setAttribute('href', href); el.setAttribute('target', '_blank'); el.setAttribute('rel', 'noreferrer noopener'); }
+    } else if (tag === 'IMG') {
+      const src = node.getAttribute('src') || '';
+      if (!/^data:image\/(png|jpe?g|gif|webp|bmp);base64,/i.test(src)) return null;
+      el.setAttribute('src', src);
+    }
+    for (const child of node.childNodes) { const clean = sanitizeDocxNode(child); if (clean) el.appendChild(clean); }
+    return el;
+  }
+  function renderDocxHtml(container, html) {
+    const parsed = new DOMParser().parseFromString(String(html || ''), 'text/html');
+    for (const child of parsed.body.childNodes) { const node = sanitizeDocxNode(child); if (node) container.appendChild(node); }
   }
 })();
