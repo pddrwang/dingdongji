@@ -447,6 +447,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('ddj.openPanel', () => openFusion()),
     vscode.commands.registerCommand('ddj.previewAskCard', () => previewInteractionCard('ask')),
     vscode.commands.registerCommand('ddj.previewApprovalCard', () => previewInteractionCard('approval')),
+    vscode.commands.registerCommand('ddj.previewDocx', async () => {
+      const ws = getWorkspace();
+      if (!ws) { void vscode.window.showWarningMessage('叮咚鸡：请先打开项目工作区，再预览 docx 手稿。'); return; }
+      if (!vscode.workspace.isTrusted) { void vscode.window.showWarningMessage('叮咚鸡：请先信任该工作区。'); return; }
+      const files = manuscriptList(ws).filter(f => /\.(docx|doc|docm)$/i.test(f));
+      if (!files.length) { void vscode.window.showInformationMessage('当前工作区未发现 .docx 手稿（扫描 手稿文书/ 与 结果文件/manuscript/）。'); return; }
+      const chosen = await vscode.window.showQuickPick(files, { title: '原生预览 docx 手稿', placeHolder: '用已安装的 WPS / Office 查看器打开' });
+      if (!chosen) return;
+      await openManuscriptNative(projectPath(ws, chosen));
+    }),
     vscode.commands.registerCommand('ddj.scanWorkspace', async () => {
       await bootstrap();
       const ws = getWorkspace();
@@ -1002,6 +1012,42 @@ function getWorkspace(): string | undefined {
   return expanded && fs.existsSync(expanded) ? expanded : undefined;
 }
 
+// ── 原生 docx 手稿预览 ───────────────────────────────────────
+// 投稿管理里点 docx 时优先用已安装的自定义编辑器（WPS / Office Viewer）在
+// 侧边列打开真正的 docx 窗口；没有原生查看器时回退到 VS Code 默认打开方式。
+function manuscriptNativeViewTypes(ext: string): string[] {
+  const wanted = new RegExp(`^\\*\\.${ext.replace('.', '')}$`, 'i');
+  const types: string[] = [];
+  for (const item of vscode.extensions.all) {
+    const editors = item.packageJSON?.contributes?.customEditors;
+    if (!Array.isArray(editors)) continue;
+    for (const editor of editors) {
+      if (typeof editor?.viewType !== 'string') continue;
+      const selectors = Array.isArray(editor.selector) ? editor.selector : [];
+      if (selectors.some((selector: any) => typeof selector?.filenamePattern === 'string' && wanted.test(selector.filenamePattern))) types.push(editor.viewType);
+    }
+  }
+  return [...new Set(types)];
+}
+
+/** Open a manuscript beside the current view; docx prefers a native custom editor. */
+async function openManuscriptNative(file: string): Promise<void> {
+  const uri = vscode.Uri.file(file);
+  const ext = path.extname(file).toLowerCase();
+  if (['.docx', '.doc', '.docm'].includes(ext)) {
+    const types = manuscriptNativeViewTypes(ext);
+    // 优先已知的 WPS / Office 原生查看器，避免落到文本编辑器。
+    const preferred = types.find(type => /wps|office|word/i.test(type)) || types[0];
+    if (preferred) {
+      try {
+        await vscode.commands.executeCommand('vscode.openWith', uri, preferred, { viewColumn: vscode.ViewColumn.Beside, preserveFocus: false });
+        return;
+      } catch { /* fall through to default open */ }
+    }
+  }
+  await vscode.commands.executeCommand('vscode.open', uri, { viewColumn: vscode.ViewColumn.Beside, preserveFocus: false });
+}
+
 function stepLabel(state: pipeline.PipelineState): string {
   const cur = pipeline.getCurrentStep(state);
   return cur ? cur.label : '—';
@@ -1143,13 +1189,22 @@ async function handleMessage(context: vscode.ExtensionContext, msg: any, source:
           }
           if (same()) fusionPanel?.webview.postMessage({ type: 'fusionAuthorList', scope: 'global', authors: readAuthors(ws) });
         } else {
-          if (!['list', 'preview', 'open'].includes(msg.action)) break;
+          if (!['list', 'preview', 'open', 'native'].includes(msg.action)) break;
           const entries = manuscriptList(ws);
           if (same()) fusionPanel?.webview.postMessage({ type: 'fusionManuscriptList', workspace: ws, files: entries });
           if (msg.action === 'list') break;
           if (msg.path !== undefined && (typeof msg.path !== 'string' || !entries.includes(msg.path))) throw new Error('手稿不在当前工作区手稿目录中');
           if (msg.action === 'open') {
-            if (msg.path && same()) await vscode.commands.executeCommand('vscode.open', vscode.Uri.file(projectPath(ws, msg.path)));
+            if (msg.path && same()) await openManuscriptNative(projectPath(ws, msg.path));
+            break;
+          }
+          if (msg.action === 'native') {
+            // 原生 docx 窗口：只列 docx，用已安装的 WPS/Office 查看器在侧边列打开。
+            const docx = entries.filter(f => /\.(docx|doc|docm)$/i.test(f));
+            if (!docx.length) { void vscode.window.showInformationMessage('当前工作区未发现 .docx 手稿（扫描 手稿文书/ 与 结果文件/manuscript/）。'); break; }
+            const picked = msg.path || await vscode.window.showQuickPick(docx, { title: '原生预览 docx 手稿' });
+            if (!picked || !same()) break;
+            await openManuscriptNative(projectPath(ws, picked));
             break;
           }
           if (!entries.length) { void vscode.window.showInformationMessage('当前工作区暂无手稿，请检查手稿文书或结果文件/manuscript 目录。'); break; }
@@ -1159,7 +1214,7 @@ async function handleMessage(context: vscode.ExtensionContext, msg: any, source:
           if (/\.(pdf|docx)$/i.test(file)) {
             if (fs.statSync(file).size > 20 * 1024 * 1024) throw new Error('文档超过 20 MB，请用原生编辑器查看');
             const converter = /\.docx$/i.test(file) && process.platform === 'darwin' ? '/usr/bin/textutil' : '/opt/homebrew/bin/pdftotext';
-            if (!fs.existsSync(converter) || (/\.docx$/i.test(file) && process.platform !== 'darwin')) { await vscode.commands.executeCommand('vscode.open', vscode.Uri.file(file)); void vscode.window.showInformationMessage('本机缺少文本提取器，已请求文件查看器打开。'); break; }
+            if (!fs.existsSync(converter) || (/\.docx$/i.test(file) && process.platform !== 'darwin')) { await openManuscriptNative(file); void vscode.window.showInformationMessage('本机缺少文本提取器，已用原生 docx 查看器打开。'); break; }
             const args = /\.docx$/i.test(file) ? ['-convert', 'txt', '-stdout', file] : ['-layout', file, '-'];
             const content = await new Promise<string>((resolve, reject) => cp.execFile(converter, args, { timeout: 15000, maxBuffer: 2 * 1024 * 1024 }, (err, stdout) => err ? reject(new Error('文本提取失败，请使用原生查看器')) : resolve(stdout)));
             if (same()) fusionPanel?.webview.postMessage({ type: 'fusionManuscript', workspace: ws, sourcePath: chosen, path: chosen + '（文本预览，不保留分页与图表）', text: content || '未提取到文本，可能为扫描文件。' });

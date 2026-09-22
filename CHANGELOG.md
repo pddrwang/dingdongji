@@ -1,5 +1,15 @@
 # 更新日志 (Changelog)
 
+## [Unreleased] 投稿管理原生 docx 预览 - 2026-09-22
+
+以下为当前源码的阶段汇总，不表示已发布。
+
+- **原生 docx 窗口**：投稿管理里点击 `.docx` 手稿不再只做文本提取，而是用已安装的自定义编辑器（WPS `wpsEditor.preview` / Office Viewer `wps-office-viewer.officeDoc`）在**侧边列**打开真正的 docx 窗口；找不到原生查看器时回退 `vscode.open`。
+- **工具栏与对话框入口**：投稿管理新增「原生 docx 窗口」按钮（自选 docx）；预览对话框在 docx 时显示「原生 docx 窗口」按钮；md/txt/pdf 仍走原文本预览。
+- **命令**：新增命令面板命令 **叮咚鸡：原生预览 docx 手稿**（`ddj.previewDocx`）。
+- **边界**：只读取工作区内 `手稿文书/`、`结果文件/manuscript/` 的文件，不复制、不修改；找不到 `.docx` 时给出明确提示。
+- **验证**：`npm run verify` 通过；新增 `工程文件/test_docx_preview.py`（Chromium 真实组件回归）通过。
+
 ## [Unreleased] Codex 掉线加固与 DSH 能力对齐 - 2026-09-22
 
 以下为当前源码的阶段汇总，不表示已发布。

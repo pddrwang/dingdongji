@@ -55,6 +55,10 @@
         "title": "叮咚鸡：预览交互卡片（审批）"
       },
       {
+        "command": "ddj.previewDocx",
+        "title": "叮咚鸡：原生预览 docx 手稿"
+      },
+      {
         "command": "ddj.scanWorkspace",
         "title": "叮咚鸡：扫描工作区"
       },
